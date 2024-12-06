@@ -27,7 +27,7 @@ public class Test1 extends GameCore {
     private Spring s = new Spring(this.p, this.p2, 100, 100);
     private Spring s2 = new Spring(this.p2, this.p3, 100, 100);
     private Spring s3 = new Spring(this.p3, this.p, 200, 250);
-    private Force g = new Gravity(p, 98.1);
+    private Force g = new Gravity(this.ps, 98.1);
 
     private GameAction exit;
     private InputManager im;

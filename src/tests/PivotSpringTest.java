@@ -19,8 +19,8 @@ public class PivotSpringTest extends TestHarness {
 	private PivotedSpring s1;
 	private Spring s2;
 	private PivotedSpring mouseSpring;
-	private Gravity g1;
-	private Gravity g2;
+	private Gravity g;
+	
 	
 	private Vec2 mousePosition;
 	
@@ -36,15 +36,15 @@ public class PivotSpringTest extends TestHarness {
 		this.ps = new ParticleSystem();
 		this.ns = new RK4Solver();
 		
-		this.a = new Particle(this.screen.getWidth() / 2, 300, 0, 0, 1);
-		this.b = new Particle(300, 600, 0, 0, 1);
+		this.a = new Particle(this.screen.getWidth() / 2 + 150 * Math.sin(Math.PI / 4), 100 + 150 * Math.cos(Math.PI / 4), 0, 0, 1);
+		//this.b = new Particle(this.a.getPosition().getX() + 150 * Math.sin(Math.PI / 4), this.a.getPosition().getY() + 150 * Math.cos(Math.PI / 4), 0, 0, 1);
+		this.b = new Particle(this.a.getPosition().getX() - 150, this.a.getPosition().getY(), 0, 0, 1);
 		
-		this.s1 = new PivotedSpring(this.a, new Vec2(this.screen.getWidth() / 2, 100), 10, 150);
-		this.s2 = new Spring(this.a, this.b, 10, 150);
+		this.s1 = new PivotedSpring(this.a, new Vec2(this.screen.getWidth() / 2, 100), 50000, 150);
+		this.s2 = new Spring(this.a, this.b, 50000, 150);
 		this.mouseSpring = new PivotedSpring(this.b, this.mousePosition, 10, 150);
 		
-		this.g1 = new Gravity(this.a, 981);
-		this.g2 = new Gravity(this.b, 981);
+		this.g = new Gravity(this.ps, 981);
 		
 		this.ps.addParticle(
 				this.a,
@@ -54,8 +54,7 @@ public class PivotSpringTest extends TestHarness {
 		this.ps.addForce(
 				this.s1,
 				this.s2,
-				this.g1,
-				this.g2,
+				this.g,
 				this.mouseSpring
 		);
 		

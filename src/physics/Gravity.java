@@ -1,17 +1,20 @@
 package physics;
 
-public class Gravity implements Force {
-    private Particle p;
-    private double g;
-    private Vec2 field;
+import java.util.List;
 
-    public Gravity(Particle p, double g) {
-        this.p = p;
+public class Gravity implements Force {
+    private ParticleSystem ps;
+    private double g;
+
+    public Gravity(ParticleSystem ps, double g) {
+        this.ps = ps;
         this.g = g;
-        this.field = new Vec2(0.0, this.g);
     }
 
     public void applyForce() {
-        this.p.addForce(this.field);
+        List<Particle> particles = this.ps.getParticles();
+        for (int i = 0; i < particles.size(); i++) {
+        	particles.get(i).addForce((new Vec2(0, this.g)).mult(particles.get(i).getMass()));
+        }
     }
 }

@@ -336,6 +336,7 @@ public class InputManager implements
     // from the KeyListener interface
     public void keyPressed(KeyEvent e) {
         GameAction gameAction = this.getKeyAction(e);
+        
         if (gameAction != null) {
             gameAction.press();
         }
@@ -346,6 +347,7 @@ public class InputManager implements
     // from the KeyListener interface
     public void keyReleased(KeyEvent e) {
         GameAction gameAction = this.getKeyAction(e);
+        
         if (gameAction != null) {
             gameAction.release();
         }

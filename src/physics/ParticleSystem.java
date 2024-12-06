@@ -32,6 +32,17 @@ public class ParticleSystem {
     }
     
     /**
+     * Add particles from a list.
+     * 
+     * @param particles a list of particles
+     */
+    public void addParticles(List<Particle> particles) {
+    	for (int i = 0; i < particles.size(); i++) {
+    		this.particles.add(particles.get(i));
+    	}
+    }
+    
+    /**
      * Access the particles in the system. I might have to
      * change this function because it allows the particles
      * within the system to be changed. I'll just have to be
@@ -52,6 +63,17 @@ public class ParticleSystem {
         for (int i = 0; i < forces.length; i++) {
         	this.forces.add(forces[i]);
         }
+    }
+    
+    /**
+     * Add a list of forces.
+     * 
+     * @param forces a list of forces
+     */
+    public void addForces(List<Force> forces) {
+    	for (int i = 0; i < forces.size(); i++) {
+    		this.forces.add(forces.get(i));
+    	}
     }
 
     /**
