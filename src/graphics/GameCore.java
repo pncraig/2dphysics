@@ -5,6 +5,8 @@ import java.awt.Font;
 import java.awt.Image;
 import java.awt.Graphics2D;
 import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+
 import java.awt.Color;
 
 /**
@@ -80,8 +82,12 @@ public abstract class GameCore {
             // Print the FPS in the top left of the screen
             double fps = 1000.0 / elapsedTime;
             g.drawString(String.format("FPS: %.2f", fps), 0, 20);
-            //g.drawString("" + fps, 0, 20);
+            
             this.draw(g);
+            // draw Swing components
+            JFrame frame = (JFrame)this.screen.getFullScreenWindow();
+            frame.getLayeredPane().paintComponents(g);
+            
             g.dispose();
             this.screen.update();
         }

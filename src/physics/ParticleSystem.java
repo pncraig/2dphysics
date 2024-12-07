@@ -75,6 +75,15 @@ public class ParticleSystem {
     		this.forces.add(forces.get(i));
     	}
     }
+    
+    /**
+     * Removes a force from the system.
+     * 
+     * @param i index of the force to remove
+     */
+    public void removeForce(int i) {
+    	
+    }
 
     /**
      * Clear the force accumulators for all the

@@ -10,6 +10,14 @@ public class Gravity implements Force {
         this.ps = ps;
         this.g = g;
     }
+    
+    public double getConstant() {
+    	return this.g;
+    }
+    
+    public void setConstant(double g) {
+    	this.g = g;
+    }
 
     public void applyForce() {
         List<Particle> particles = this.ps.getParticles();

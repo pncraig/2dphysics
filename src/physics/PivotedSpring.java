@@ -55,8 +55,24 @@ public class PivotedSpring implements Force {
 		return this.l;
 	}
 	
+	public void setParticle(Particle p) {
+		this.p = p;
+	}
+	
+	public void setSpringConstant(double k) {
+		this.k = k;
+	}
+	
+	public void setLength(double l) {
+		this.l = l;
+	}
+	
 	@Override
 	public void applyForce() {
+		if (this.p == null) {
+			return;
+		}
+		
 		Vec2 r = Vec2.sub(this.pivot, this.p.getPosition());
         double fmag = -this.k * (this.l - r.mag());
         Vec2 f= Vec2.mult(r.unit(), fmag);

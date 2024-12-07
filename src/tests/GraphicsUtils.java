@@ -105,6 +105,10 @@ public class GraphicsUtils {
      * @param s the pivoted spring to draw
      */
     public static void drawPivotedSpring(Graphics2D g, PivotedSpring s) {
+    	if (s.getParticle() == null) {
+    		return;
+    	}
+    	
     	Particle a = new Particle(s.getPivot(), new Vec2(), 1);
     	Particle b = s.getParticle();
     	Spring wrapper = new Spring(a, b, s.getSpringConstant(), s.getLength());
