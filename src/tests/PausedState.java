@@ -18,6 +18,7 @@ import physics.Vec2;
 import physics.Spring;
 import physics.Particle;
 import physics.PivotedSpring;
+import physics.Force;
 
 /**
  * Represents the editor when it is in the paused
@@ -29,6 +30,7 @@ public class PausedState implements EditorState {
 	private final PausedState.SpawnParticleState SPAWN_PARTICLE_STATE;
 	private final PausedState.SpawnPivotState SPAWN_PIVOT_STATE;
 	private final PausedState.SpawnSpringState SPAWN_SPRING_STATE;
+	private final PausedState.RemoveObjectState REMOVE_OBJECT_STATE;
 	
 	private State state;
 	private SimulationEditor se;
@@ -36,6 +38,7 @@ public class PausedState implements EditorState {
 	private JButton spawnParticleButton;
 	private JButton spawnPivotButton;
 	private JButton spawnSpringButton;
+	private JButton removeObjectButton;
 	
 	public PausedState(SimulationEditor se) {
 		this.se = se;
@@ -43,6 +46,7 @@ public class PausedState implements EditorState {
 		this.SPAWN_PARTICLE_STATE = new SpawnParticleState(this);
 		this.SPAWN_PIVOT_STATE = new SpawnPivotState(this);
 		this.SPAWN_SPRING_STATE = new SpawnSpringState(this);
+		this.REMOVE_OBJECT_STATE = new RemoveObjectState(this);
 		
 		this.state = this.SPAWN_PARTICLE_STATE;
 		this.state.enter();
@@ -62,6 +66,12 @@ public class PausedState implements EditorState {
 		this.spawnSpringButton = se.createButton("SpringButton.png", "Select 'Spawn Spring' Mode", (ActionEvent e) -> {
 			this.state.exit();
 			this.state = SPAWN_SPRING_STATE;
+			this.state.enter();
+		});
+		
+		this.removeObjectButton = se.createButton("RemoveButton.png", "Select 'Remove Object' Mode", (ActionEvent e) -> {
+			this.state.exit();
+			this.state = REMOVE_OBJECT_STATE;
 			this.state.enter();
 		});
 	}
@@ -90,6 +100,7 @@ public class PausedState implements EditorState {
 		contentPane.add(this.spawnParticleButton);
 		contentPane.add(this.spawnPivotButton);
 		contentPane.add(this.spawnSpringButton);
+		contentPane.add(this.removeObjectButton);
 		
 		this.state.enter();
 	}
@@ -188,6 +199,7 @@ public class PausedState implements EditorState {
 		private PausedState ps;
 		
 		private GameAction select;
+		// Use a stack so that if particles are overlapping, only one is selected
 		private Stack<Hoverable> selections;
 		
 		public SpawnSpringState(PausedState ps) {
@@ -198,22 +210,38 @@ public class PausedState implements EditorState {
 		}
 		
 		public void handleInput() {
+			// If the mouse is clicked...
 			if (this.select.isPressed()) {
 				List<Particle> particles = this.ps.se.getParticles();
 				List<GUIPivot> pivots = this.ps.se.getPivots();
+				boolean particleSelected = false;
 				
+				// Check if the mouse is hovering over a particle
 				for (Particle p : particles) {
 					if (((GUIParticle)p).mouseOver(this.ps.se.getMousePosition())) {
+						particleSelected = true;
 						this.selections.push((GUIParticle)p);
+						break;
 					}
 				}
 				
+				// Check if the mouse is hovering over a pivot
 				for (GUIPivot p : pivots) {
 					if (p.mouseOver(this.ps.se.getMousePosition())) {
+						particleSelected = true;
 						this.selections.push(p);
+						break;
 					}
 				}
 				
+				// If a particle hasn't been selected, clear the stack. This lets the
+				// user be able to cancel their selection by clicking off of a particle or pivot
+				if (!particleSelected) {
+					this.selections.clear();
+				}
+				
+				// When there are more than two particles in the stack, add a new spring force
+				// to the particle system attaching them
 				if (this.selections.size() >= 2) {
 					Hoverable a = this.selections.pop();
 					Hoverable b = this.selections.pop();
@@ -232,6 +260,8 @@ public class PausedState implements EditorState {
 		}
 		
 		public void render(Graphics2D g) {
+			// Draw a spring stretching from the currently selected particle to the
+			// mouse pointer
 			if (this.selections.size() == 1) {
 				Hoverable p = this.selections.peek();
 				if (p instanceof GUIParticle) {
@@ -246,6 +276,17 @@ public class PausedState implements EditorState {
 					}
 				}
 			}
+			
+			List<Particle> particles = this.ps.se.getParticles();
+			List<GUIPivot> pivots = this.ps.se.getPivots();
+			
+			for (Particle p : particles) {
+				((GUIParticle)p).drawHighlighted(g, this.ps.se.getMousePosition());
+			}
+			
+			for (GUIPivot p : pivots) {
+				p.drawHighlighted(g, this.ps.se.getMousePosition());
+			}
 		}
 		
 		public void enter() {
@@ -258,7 +299,105 @@ public class PausedState implements EditorState {
 			System.out.println("Exiting spawn spring state");
 			InputManager im = this.ps.se.getInputManager();
 			im.mapToMouse(null, InputManager.MOUSE_BUTTON_1);
+			this.selections.clear();
 		}
+	}
+	
+	private class RemoveObjectState implements State {
+		private PausedState ps;
+		
+		private GameAction removeObject;
+		
+		public RemoveObjectState(PausedState ps) {
+			this.ps = ps;
+			
+			this.removeObject = new GameAction("remove object", GameAction.DETECT_INITIAL_PRESS_ONLY);
+		}
+		
+		public void handleInput() {
+			if (this.removeObject.isPressed()) {
+				List<Particle> particles = this.ps.se.getParticles();
+				List<GUIPivot> pivots = this.ps.se.getPivots();
+				List<Force> forces = this.ps.se.getForces();
+				
+				for (int i = 0; i < particles.size(); i++) {
+					GUIParticle p = (GUIParticle)particles.get(i);
+					if (p.mouseOver(this.ps.se.getMousePosition())) {
+						// Remove any spring forces that are attached to the
+						// particle
+						for (int j = forces.size() - 1; j >= 0; j--) {
+							Force f = forces.get(j);
+							
+							if (f instanceof GUISpring) {
+								if ((((GUISpring)f).getParticles()[0]).equals(p) ||
+									(((GUISpring)f).getParticles()[1]).equals(p)) {
+									forces.remove(j);
+								}
+							} else if (f instanceof GUIPivotedSpring) {
+								if (((GUIPivotedSpring)f).getParticle().equals(p)) {
+									forces.remove(j);
+								}
+							}
+						}
+						
+						particles.remove(i);
+						
+						// We only want to remove one particle every click
+						return;
+					}
+				}
+				
+				for (int i = 0; i < pivots.size(); i++) {
+					GUIPivot p = pivots.get(i);
+					if (p.mouseOver(this.ps.se.getMousePosition())) {
+						// Iterate over all the forces in the system, and remove any PivotedSprings
+						// that are attached to the pivot being removed
+						for (int j = forces.size() - 1; j >= 0; j--) {
+							Force f = forces.get(j);
+							if (f instanceof GUIPivotedSpring) {
+								// To determine if two pivots are equal, subtract their distances and see
+								// if the distance is 0. There is probably a better way to do this.
+								if (Vec2.sub(((GUIPivotedSpring)f).getPivot(), p.getPosition()).mag() == 0.0) {
+									forces.remove(j);
+								}
+							}
+						}
+						
+						pivots.remove(i);
+						
+						// We only want to remove one pivot every click
+						return;
+					}
+				}
+			}
+		}
+		
+		public void render(Graphics2D g) {
+			List<Particle> particles = this.ps.se.getParticles();
+			List<GUIPivot> pivots = this.ps.se.getPivots();
+			
+			for (Particle p : particles) {
+				((GUIParticle)p).drawHighlighted(g, this.ps.se.getMousePosition());
+			}
+			
+			for (GUIPivot p : pivots) {
+				p.drawHighlighted(g, this.ps.se.getMousePosition());
+			}
+		}
+		
+		public void enter() {
+			System.out.println("Entering remove object state");
+			InputManager im = this.ps.se.getInputManager();
+			im.mapToMouse(this.removeObject, InputManager.MOUSE_BUTTON_1);
+		}
+		
+		public void exit() {
+			System.out.println("Exiting remove object state");
+			InputManager im = this.ps.se.getInputManager();
+			im.mapToMouse(null, InputManager.MOUSE_BUTTON_1);
+		}
+		
+		
 	}
 }
 

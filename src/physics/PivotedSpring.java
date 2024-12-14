@@ -6,7 +6,7 @@ package physics;
  * @author pncra
  *
  */
-public class PivotedSpring implements Force {
+public class PivotedSpring extends Force {
 	private Particle p;
 	private Vec2 pivot;
 	private double k;

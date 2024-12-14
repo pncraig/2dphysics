@@ -1,6 +1,6 @@
 package physics;
 
-public class GravityAttraction implements Force {
+public class GravityAttraction extends Force {
 	private Particle a;
 	private Particle b;
 	private double G;

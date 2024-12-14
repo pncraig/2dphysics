@@ -4,7 +4,7 @@ package physics;
  * This class represents an abstract force.
  * Implement this interface to create new forces.
  */
-public interface Force {
+public abstract class Force extends Registerable {
 	/**
 	 * Classes that implement the Force interface will
 	 * have access to one or multiple particles. The ParticleSystem
@@ -12,5 +12,5 @@ public interface Force {
 	 * ParticleSystem will call the apply force method for
 	 * each force in the system.
 	 */
-    public void applyForce();
+    public abstract void applyForce();
 }

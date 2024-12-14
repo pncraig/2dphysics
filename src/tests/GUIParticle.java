@@ -12,6 +12,7 @@ import physics.Vec2;
  *
  */
 public class GUIParticle extends Particle implements Drawable, Hoverable {
+	private static final int EXTRA_RADIUS = 3;
 	private int r;
 	
 	public GUIParticle(Particle p) {
@@ -39,7 +40,18 @@ public class GUIParticle extends Particle implements Drawable, Hoverable {
 	 * @param g the Graphics object to draw to
 	 */
 	public void draw(Graphics2D g) {
-		g.fillOval((int)(this.getPosition().getX() - r), (int)(this.getPosition().getY() - r), r * 2, r * 2);
+		g.fillOval((int)(this.getPosition().getX() - this.r), (int)(this.getPosition().getY() - this.r), this.r * 2, this.r * 2);
+	}
+	
+	@Override
+	public void drawHighlighted(Graphics2D g, Vec2 mousePosition) {
+		if (this.mouseOver(mousePosition)) {
+			int rad = this.r + EXTRA_RADIUS;
+			if (rad <= 0) {
+				rad = 1;
+			}
+			g.drawOval((int)this.getPosition().getX() - rad, (int)this.getPosition().getY() - rad, rad * 2, rad * 2);
+		}
 	}
 	
 	/**

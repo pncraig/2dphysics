@@ -139,10 +139,6 @@ public class SimulationEditor extends GameCore {
 		List<Particle> particles = this.ps.getParticles();
 		for (Particle p : particles) {
 			((GUIParticle)p).draw(g);
-			
-			if (((GUIParticle)p).mouseOver(this.mousePosition)) {
-				g.drawOval((int)p.getPosition().getX() - 15, (int)p.getPosition().getY() - 15, 30, 30);
-			}
 		}
 		
 		for (GUIPivot p : pivots) {
@@ -234,6 +230,15 @@ public class SimulationEditor extends GameCore {
 	 */
 	public List<GUIPivot> getPivots() {
 		return this.pivots;
+	}
+	
+	/**
+	 * Get the forces in the system.
+	 * 
+	 * @return list of forces
+	 */
+	public List<Force> getForces() {
+		return this.ps.getForces();
 	}
 	
 	/**

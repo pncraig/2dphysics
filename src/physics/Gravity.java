@@ -7,7 +7,7 @@ import java.util.List;
  * the Earth, causing things to fall.
  * @author pncra
  */
-public class Gravity implements Force {
+public class Gravity extends Force {
     private ParticleSystem ps;
     private double g;
 

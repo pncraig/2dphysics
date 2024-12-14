@@ -1,6 +1,6 @@
 package physics;
 
-public class Spring implements Force {
+public class Spring extends Force {
     private Particle a;
     private Particle b;
     private double k;

@@ -4,7 +4,7 @@ package physics;
  * Class that represents a particle in my
  * physics simulation.
  */
-public class Particle {	
+public class Particle extends Registerable {	
     // The position of the particle
     private Vec2 x;
     // The velocity of the particle
@@ -47,7 +47,7 @@ public class Particle {
 
     /**
      * Set this particle's position.
-     pp*
+     *
      * @param x the new position of this particle
      */
     public void setPosition(Vec2 x) {
