@@ -4,7 +4,7 @@ package physics;
  * Class that represents a particle in my
  * physics simulation.
  */
-public class Particle {
+public class Particle {	
     // The position of the particle
     private Vec2 x;
     // The velocity of the particle
@@ -23,6 +23,10 @@ public class Particle {
 
     public Particle(Vec2 x, Vec2 v, double m) {
         this(x.getX(), x.getY(), v.getX(), v.getY(), m);
+    }
+    
+    public Particle(Particle p) {
+    	this(new Vec2(p.getPosition()), new Vec2(p.getVelocity()), p.getMass());
     }
 
     /**
@@ -43,7 +47,7 @@ public class Particle {
 
     /**
      * Set this particle's position.
-     *
+     pp*
      * @param x the new position of this particle
      */
     public void setPosition(Vec2 x) {

@@ -12,6 +12,13 @@ public class Spring implements Force {
         this.k = k;
         this.l = l;
     }
+    
+    public Spring(Spring s) {
+    	this.a = s.getParticles()[0];
+    	this.b = s.getParticles()[1];
+    	this.k = s.getSpringConstant();
+    	this.l = s.getLength();
+    }
 
     /**
      * Calculate the potential energy stored in

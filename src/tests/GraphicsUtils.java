@@ -34,6 +34,70 @@ public class GraphicsUtils {
     /**
      * Draw a spring.
      * 
+     * @param g the graphics context to draw to
+     * @param a one of the end points of the spring
+     * @param b the other end point of the spring
+     * @param k the spring constant of the spring
+     * @param l the resting length of the spring
+     */
+    public static void drawSpring(Graphics2D g, Vec2 a, Vec2 b, double k, double l) {
+    	double w = SPRING_CONSTANT / k;
+    	
+    	// Calculate the vector pointing from particle a to particle b
+    	Vec2 r = Vec2.sub(b, a);
+    	// Calculate the number of nodes in the spring based on its resting length. The 10 dictates the density
+    	int numberOfNodes = (int)(l / 10);
+    	// Calculate the distance between each node based on how the spring is stretched
+    	double d = r.mag() / numberOfNodes;
+    	// Get the direction of the vector between a and b to rotate the rib vectors
+    	double dir = r.dir();
+    	
+    	// Calculate the vector to find the first rib
+    	double theta = Math.atan(w / d);
+    	double h = 0.5 * Math.sqrt(d * d+ w * w);
+    	
+    	
+    	Vec2 node1 = Vec2.add(a, r.unit().mult(d));
+    	g.drawLine((int)a.getX(), (int)a.getY(), (int)node1.getX(), (int)node1.getY());
+    	
+    	Vec2 ribUp = Vec2.polarVector(h, theta);
+    	ribUp.rotate(dir);
+    	
+    	Vec2 node2 = Vec2.add(node1, ribUp);
+    	g.drawLine((int)node1.getX(), (int)node1.getY(), (int)node2.getX(), (int)node2.getY());
+    	
+    	Vec2 node3 = Vec2.sub(b, r.unit().mult(d));
+    	g.drawLine((int)b.getX(), (int)b.getY(), (int)node3.getX(), (int)node3.getY());
+    	
+    	Vec2 ribDown = Vec2.polarVector(h, -theta);
+    	ribDown.rotate(dir);
+    	
+    	if (numberOfNodes % 2 == 0) {
+    		Vec2 node4 = Vec2.sub(node3, ribUp);
+    		g.drawLine((int)node3.getX(), (int)node3.getY() , (int)node4.getX(), (int)node4.getY());
+    	} else {
+    		Vec2 node4 = Vec2.sub(node3, ribDown);
+    		g.drawLine((int)node3.getX(), (int)node3.getY() , (int)node4.getX(), (int)node4.getY());
+    	}
+    	
+    	ribUp.mult(2);
+    	ribDown.mult(2);
+    	Vec2 startNode = node2;
+    	for (int i = 0; i < numberOfNodes - 3; i++) {
+    		Vec2 drawToNode;
+    		if (i % 2 == 0) {
+    			drawToNode = Vec2.add(startNode, ribDown);
+    		} else {
+    			drawToNode = Vec2.add(startNode, ribUp);
+    		}
+    		g.drawLine((int)startNode.getX(), (int)startNode.getY(), (int)drawToNode.getX(), (int)drawToNode.getY());
+    		startNode = drawToNode;
+    	}
+    }
+    
+    /**
+     * Draw a spring.
+     * 
      * @param g the graphics object
      * @param s the spring to be drawn
      * @param w the width of the spring

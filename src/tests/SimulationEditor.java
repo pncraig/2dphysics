@@ -49,115 +49,55 @@ public class SimulationEditor extends GameCore {
 		se.run();
 	}
 	
+	public PausedState PAUSED_STATE;
+	public UnpausedState UNPAUSED_STATE;
+	private EditorState state;
+	
 	private InputManager im;
 	private GameAction exit;
 	private GameAction pause;
-	private GameAction spring;
-	private GameAction spawn;
-	
-	private JPanel buttonSidebar;
-	private JButton spawnParticleButton;
-	private JButton gravityButton;
-	private JButton mouseSpringButton;
 	
 	private boolean paused;
-	private boolean spawnParticleMode;
-	private boolean mouseSpringMode;
 	
 	private ParticleSystem ps;
 	private NumericalSolver ns;
-	private List<Particle> particles;
-	private List<Force> forces;
-	private List<Vec2> pivots;
+	private List<GUIPivot> pivots;
 	
 	private Gravity g;
-	private PivotedSpring mouseSpring;
 	
 	private Vec2 mousePosition;
 	
 	@Override
 	public void init() {
 		super.init();
-		
+
 		NullRepaintManager.install();
-		
 		
 		this.im = new InputManager(this.screen.getFullScreenWindow());
 		this.exit = new GameAction("exit", GameAction.DETECT_INITIAL_PRESS_ONLY);
 		this.pause = new GameAction("pause", GameAction.DETECT_INITIAL_PRESS_ONLY);
-		this.spawn = new GameAction("spawn", GameAction.DETECT_INITIAL_PRESS_ONLY);
-		this.spring = new GameAction("spring", GameAction.NORMAL);
 		
 		this.im.mapToKey(this.exit, KeyEvent.VK_ESCAPE);
 		this.im.mapToKey(this.pause, KeyEvent.VK_SPACE);
-		this.im.mapToMouse(this.spawn, InputManager.MOUSE_BUTTON_1);
 		
-		ActionListener spawnParticle = (ActionEvent e) -> {
-			this.mouseSpringMode = false;
-			this.spawnParticleMode = true;
-			
-			this.mouseSpring.setSpringConstant(0);
-			this.im.mapToMouse(this.spawn, InputManager.MOUSE_BUTTON_1);
-		};
-		
-		ActionListener toggleGravity = (ActionEvent e) -> {
-			if (this.g.getConstant() == 0.0) {
-				this.g.setConstant(98.1);
-			} else {
-				this.g.setConstant(0.0);
-			}	
-		};
-		
-		ActionListener manipulateSpring = (ActionEvent e) -> {
-			this.spawnParticleMode = false;
-			this.mouseSpringMode = true;
-			
-			this.mouseSpring.setSpringConstant(150);
-			this.im.mapToMouse(this.spring, InputManager.MOUSE_BUTTON_1);
-		};
-		
-		this.spawnParticleButton = this.createButton("CircleButton.png", "Select 'Spawn Particle' Mode", spawnParticle);
-		this.gravityButton= this.createButton("GravityButton.png", "Toggle gravity", toggleGravity);
-		this.mouseSpringButton = this.createButton("SpringButton.png", "Manipulate particles with a spring attached to the mouse", manipulateSpring);
-		
-		this.buttonSidebar = new JPanel();
-		this.buttonSidebar.setOpaque(false);
-		this.buttonSidebar.add(this.spawnParticleButton);
-		this.buttonSidebar.add(this.gravityButton);
-		this.buttonSidebar.add(this.mouseSpringButton);
-		
-		JFrame frame = (JFrame)this.screen.getFullScreenWindow();
-		Container contentPane = frame.getContentPane();
-		
-		if (contentPane instanceof JComponent) {
-			((JComponent)contentPane).setOpaque(false);
-		}
-		
-		contentPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
-		contentPane.add(this.spawnParticleButton);
-		contentPane.add(this.gravityButton);
-		contentPane.add(this.mouseSpringButton);
-		
-		this.paused = false;
-		this.spawnParticleMode = true;
-		this.mouseSpringMode = false;
+		this.paused = true;
 		
 		this.ps = new ParticleSystem();
 		this.ns = new RK4Solver();
 		
-		this.particles = new ArrayList<>();
-		this.forces = new ArrayList<>();
 		this.pivots = new ArrayList<>();
 		
 		this.mousePosition = new Vec2(this.im.getMouseX(), this.im.getMouseY());
 		
 		this.g = new Gravity(this.ps, 98.1);
-		this.mouseSpring = new PivotedSpring(null, this.mousePosition, 0, 0);
 		
-		this.forces.add(this.g);
-		this.forces.add(this.mouseSpring);
+		this.ps.addForce(this.g);
 		
-		this.ps.addForces(this.forces);
+		this.PAUSED_STATE = new PausedState(this);
+		this.UNPAUSED_STATE = new UnpausedState(this);
+		this.state = this.PAUSED_STATE;
+		this.state.enter();
+		
 	}
 	
 	/**
@@ -169,33 +109,13 @@ public class SimulationEditor extends GameCore {
 			this.stop();
 		}
 		
-		if (this.pause.isPressed()) {
+		EditorState state = this.state.handleInput(this.pause);
+		if (state != null) {
 			this.paused = !this.paused;
-		}
-		
-		if (this.spawnParticleMode && this.spawn.isPressed()) {
-			Particle p = new Particle(this.mousePosition, new Vec2(), 10);
-			this.particles.add(p);
-			this.ps.addParticle(p);
-		}
-		
-		if (this.spring.isPressed()) {
-			if (!this.particles.isEmpty()) {
-				Particle closestParticle = this.particles.get(0);
-				double closestDistance = Vec2.sub(this.mousePosition, closestParticle.getPosition()).mag();
-				for (int i = 1; i < this.particles.size(); i++) {
-					Vec2 r = Vec2.sub(this.mousePosition, this.particles.get(i).getPosition());
-					if (r.mag() < closestDistance) {
-						closestDistance = r.mag();
-						closestParticle = this.particles.get(i);
-					}
-				}
-				
-				this.mouseSpring.setParticle(closestParticle);
-				this.mouseSpring.setLength(closestDistance);
-			}
-		} else {
-			this.mouseSpring.setParticle(null);
+			this.state.exit();
+			
+			this.state = state;
+			this.state.enter();
 		}
 	}
 	
@@ -210,21 +130,33 @@ public class SimulationEditor extends GameCore {
 			
 		}
 		
-		
-		
 		this.mousePosition.setX(this.im.getMouseX());
 		this.mousePosition.setY(this.im.getMouseY());
 	}
 	
 	@Override
 	public void draw(Graphics2D g) {
-		for (Particle p : this.particles) {
-			GraphicsUtils.drawParticle(g, p);
+		List<Particle> particles = this.ps.getParticles();
+		for (Particle p : particles) {
+			((GUIParticle)p).draw(g);
+			
+			if (((GUIParticle)p).mouseOver(this.mousePosition)) {
+				g.drawOval((int)p.getPosition().getX() - 15, (int)p.getPosition().getY() - 15, 30, 30);
+			}
 		}
 		
-		if (this.mouseSpringMode) {
-			GraphicsUtils.drawPivotedSpring(g, this.mouseSpring);
+		for (GUIPivot p : pivots) {
+			p.draw(g);
 		}
+		
+		List<Force> forces = this.ps.getForces();
+		for (Force f : forces ) {
+			if (f instanceof GUISpring || f instanceof GUIPivotedSpring) {
+				((Drawable)f).draw(g);
+			}
+		}
+		
+		this.state.render(g);
 	}
 	
 	/**
@@ -235,7 +167,7 @@ public class SimulationEditor extends GameCore {
 	 * @param action the action that the button performs when pressed
 	 * @return the button
 	 */
-	private JButton createButton(String imagePath, String tooltip, ActionListener action) {
+	public JButton createButton(String imagePath, String tooltip, ActionListener action) {
 		ImageIcon icon = new ImageIcon(imagePath);
 		int w = icon.getIconWidth();
 		int h = icon.getIconHeight();
@@ -268,4 +200,95 @@ public class SimulationEditor extends GameCore {
 		return button;
 		
 	}
+	
+	/**
+	 * Returns the content pane of this window, but sets
+	 * the background of the content pane to be transparent first
+	 * 
+	 * @return the content pane for this window
+	 */
+	public Container getContentPane() {
+		JFrame frame = (JFrame)this.screen.getFullScreenWindow();
+		Container contentPane = frame.getContentPane();
+		
+		if (contentPane instanceof JComponent) {
+			((JComponent)contentPane).setOpaque(false);
+		}
+		
+		return contentPane;
+	}
+	
+	/**
+	 * Get the list of the particles in the ParticleSystem.
+	 * 
+	 * @return a list of particles in the ParticleSystem
+	 */
+	public List<Particle> getParticles() {
+		return this.ps.getParticles();
+	}
+	
+	/**
+	 * Get the list of pivots.
+	 * 
+	 * @return list of pivots
+	 */
+	public List<GUIPivot> getPivots() {
+		return this.pivots;
+	}
+	
+	/**
+	 * Add a new GUIParticle to the system.
+	 * 
+	 * @param x the position vector to add the new particle at
+	 * @param v the velocity vector to add the new particle with
+	 * @param m the mass of the new particle
+	 */
+	public void addParticle(Vec2 x, Vec2 v, double m) {
+		this.ps.addParticle(new GUIParticle(new Particle(x, v, m)));
+	}
+	
+	/**
+	 * Add a new Pivot to the system (a pivot is basically just a 
+	 * Vec2).
+	 * 
+	 * @param p the position of the pivot
+	 */
+	public void addPivot(Vec2 p) {
+		this.pivots.add(new GUIPivot(p));
+	}
+	
+	/**
+	 * Add a new Force to the particle system.
+	 * 
+	 * @param f the force to add
+	 */
+	public void addForce(Force f) {
+		this.ps.addForce(f);
+	}
+	
+	/**
+	 * Gets the position of the mouse as a vector.
+	 * 
+	 * @return the position of the mouse
+	 */
+	public Vec2 getMousePosition() {
+		return new Vec2(this.mousePosition);
+	}
+	
+	/**
+	 * Gets the InputManager that handles input for the 
+	 * simulation editor.
+	 * 
+	 * @return the InputManager
+	 */
+	public InputManager getInputManager() {
+		return this.im;
+	}
 }
+
+
+
+
+
+
+

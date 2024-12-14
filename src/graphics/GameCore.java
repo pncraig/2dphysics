@@ -84,6 +84,7 @@ public abstract class GameCore {
             g.drawString(String.format("FPS: %.2f", fps), 0, 20);
             
             this.draw(g);
+            
             // draw Swing components
             JFrame frame = (JFrame)this.screen.getFullScreenWindow();
             frame.getLayeredPane().paintComponents(g);

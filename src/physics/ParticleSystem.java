@@ -77,14 +77,14 @@ public class ParticleSystem {
     }
     
     /**
-     * Removes a force from the system.
+     * Access the forces in the system.
      * 
-     * @param i index of the force to remove
+     * @return a list containing the forces acting in the system
      */
-    public void removeForce(int i) {
-    	
+    public List<Force> getForces() {
+    	return this.forces;
     }
-
+    
     /**
      * Clear the force accumulators for all the
      * particles in the system.

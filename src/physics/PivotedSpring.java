@@ -19,6 +19,13 @@ public class PivotedSpring implements Force {
 		this.l = l;
 	}
 	
+	public PivotedSpring(PivotedSpring s) {
+		this.p = s.getParticle();
+		this.pivot = new Vec2(s.getPivot());
+		this.k = s.getSpringConstant();
+		this.l = s.getLength();
+	}
+	
 	/**
 	 * Get the pivot point of the spring.
 	 * 
@@ -53,18 +60,6 @@ public class PivotedSpring implements Force {
 	 */
 	public double getLength() {
 		return this.l;
-	}
-	
-	public void setParticle(Particle p) {
-		this.p = p;
-	}
-	
-	public void setSpringConstant(double k) {
-		this.k = k;
-	}
-	
-	public void setLength(double l) {
-		this.l = l;
 	}
 	
 	@Override
