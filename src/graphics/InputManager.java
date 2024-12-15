@@ -362,6 +362,7 @@ public class InputManager implements
     // from the MouseListener interface
     public void mousePressed(MouseEvent e) {
         GameAction gameAction = this.getMouseButtonAction(e);
+        System.out.println(e.getClickCount());
         if (gameAction != null) {
             gameAction.press();
         }

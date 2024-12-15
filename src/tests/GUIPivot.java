@@ -27,6 +27,15 @@ public class GUIPivot implements Drawable, Hoverable {
 		return new Vec2(this.position);
 	}
 	
+	/**
+	 * Set the position of this pivot.
+	 * 
+	 * @param p the new position of this pivot
+	 */
+	public void setPosition(Vec2 p) {
+		this.position = new Vec2(p);
+	}
+	
 	@Override
 	public boolean mouseOver(Vec2 mousePosition) {
 		double dist = Vec2.sub(this.position, mousePosition).mag();

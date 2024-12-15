@@ -215,6 +215,15 @@ public class SimulationEditor extends GameCore {
 	}
 	
 	/**
+	 * Sets the cursor.
+	 * 
+	 * @param cursor the cursor to set the cursor to
+	 */
+	public void setCursor(Cursor cursor) {
+		this.screen.getFullScreenWindow().setCursor(cursor);
+	}
+	
+	/**
 	 * Get the list of the particles in the ParticleSystem.
 	 * 
 	 * @return a list of particles in the ParticleSystem

@@ -1,6 +1,7 @@
 package tests;
 
 import java.awt.Container;
+import java.awt.Cursor;
 import java.util.Stack;
 import java.util.List;
 
@@ -31,6 +32,7 @@ public class PausedState implements EditorState {
 	private final PausedState.SpawnPivotState SPAWN_PIVOT_STATE;
 	private final PausedState.SpawnSpringState SPAWN_SPRING_STATE;
 	private final PausedState.RemoveObjectState REMOVE_OBJECT_STATE;
+	private final PausedState.InspectObjectState INSPECT_OBJECT_STATE;
 	
 	private State state;
 	private SimulationEditor se;
@@ -39,6 +41,7 @@ public class PausedState implements EditorState {
 	private JButton spawnPivotButton;
 	private JButton spawnSpringButton;
 	private JButton removeObjectButton;
+	private JButton inspectObjectButton;
 	
 	public PausedState(SimulationEditor se) {
 		this.se = se;
@@ -47,6 +50,7 @@ public class PausedState implements EditorState {
 		this.SPAWN_PIVOT_STATE = new SpawnPivotState(this);
 		this.SPAWN_SPRING_STATE = new SpawnSpringState(this);
 		this.REMOVE_OBJECT_STATE = new RemoveObjectState(this);
+		this.INSPECT_OBJECT_STATE = new InspectObjectState(this);
 		
 		this.state = this.SPAWN_PARTICLE_STATE;
 		this.state.enter();
@@ -74,6 +78,12 @@ public class PausedState implements EditorState {
 			this.state = REMOVE_OBJECT_STATE;
 			this.state.enter();
 		});
+		
+		this.inspectObjectButton = se.createButton("SelectButton.png", "Select 'Inspect Object' Mode", (ActionEvent e) -> {
+			this.state.exit();
+			this.state = INSPECT_OBJECT_STATE;
+			this.state.enter();
+		});
 	}
 	
 	@Override
@@ -97,6 +107,7 @@ public class PausedState implements EditorState {
 		System.out.println("Enter paused state");
 		Container contentPane = this.se.getContentPane();
 		contentPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		contentPane.add(this.inspectObjectButton);
 		contentPane.add(this.spawnParticleButton);
 		contentPane.add(this.spawnPivotButton);
 		contentPane.add(this.spawnSpringButton);
@@ -315,6 +326,7 @@ public class PausedState implements EditorState {
 		}
 		
 		public void handleInput() {
+			// We only want to remove one thing every click
 			if (this.removeObject.isPressed()) {
 				List<Particle> particles = this.ps.se.getParticles();
 				List<GUIPivot> pivots = this.ps.se.getPivots();
@@ -369,12 +381,23 @@ public class PausedState implements EditorState {
 						return;
 					}
 				}
+				
+				for (int i = 0; i < forces.size(); i++) {
+					Force f = forces.get(i);
+					if (f instanceof GUISpring || f instanceof GUIPivotedSpring) {
+						if (((Hoverable)f).mouseOver(this.ps.se.getMousePosition())) {
+							forces.remove(i);
+							return;
+						}
+					}
+				}
 			}
 		}
 		
 		public void render(Graphics2D g) {
 			List<Particle> particles = this.ps.se.getParticles();
 			List<GUIPivot> pivots = this.ps.se.getPivots();
+			List<Force> forces = this.ps.se.getForces();
 			
 			for (Particle p : particles) {
 				((GUIParticle)p).drawHighlighted(g, this.ps.se.getMousePosition());
@@ -382,6 +405,12 @@ public class PausedState implements EditorState {
 			
 			for (GUIPivot p : pivots) {
 				p.drawHighlighted(g, this.ps.se.getMousePosition());
+			}
+			
+			for (Force f : forces) {
+				if (f instanceof GUISpring || f instanceof GUIPivotedSpring) {
+					((Hoverable)f).drawHighlighted(g, this.ps.se.getMousePosition());
+				}
 			}
 		}
 		
@@ -398,6 +427,87 @@ public class PausedState implements EditorState {
 		}
 		
 		
+	}
+	
+	private class InspectObjectState implements State {
+		private PausedState ps;
+		
+		private GameAction drag;
+		
+		private boolean selected;
+		private Hoverable selectedObject;
+		
+		private Cursor defaultCursor;
+		private Cursor draggingCursor;
+		
+		public InspectObjectState(PausedState ps) {
+			this.ps = ps;
+			
+			this.drag = new GameAction("drag", GameAction.NORMAL);
+			
+			this.selected = false;
+			this.selectedObject = null;
+			
+			this.defaultCursor = Cursor.getDefaultCursor();
+			this.draggingCursor = Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR);
+		}
+		
+		public void handleInput() {
+			if (this.drag.isPressed()) {
+				if (!this.selected) {
+					List<Particle> particles = this.ps.se.getParticles();
+					List<GUIPivot> pivots = this.ps.se.getPivots();
+					
+					this.selected = true;
+					this.ps.se.setCursor(this.draggingCursor);
+					
+					for (Particle p : particles) {
+						if (((GUIParticle)p).mouseOver(this.ps.se.getMousePosition())) {
+							this.selectedObject = (GUIParticle)p;
+							return;
+						}
+					}
+					
+					for (GUIPivot p : pivots) {
+						if (p.mouseOver(this.ps.se.getMousePosition())) {
+							this.selectedObject = p;
+							return;
+						}
+					}
+				}
+				
+				if (this.selectedObject != null && this.drag.isPressed()) {
+					if (this.selectedObject instanceof GUIParticle) {
+						((GUIParticle)this.selectedObject).setPosition(this.ps.se.getMousePosition());
+					} else if (this.selectedObject instanceof GUIPivot) {
+						((GUIPivot)this.selectedObject).setPosition(this.ps.se.getMousePosition());
+					}
+				}
+			} else {
+				if (this.selected) {
+					this.ps.se.setCursor(this.defaultCursor);
+				}
+				
+				this.selected = false;
+				this.selectedObject = null;
+			}
+		}
+		
+		public void render(Graphics2D g) {
+			
+		}
+		
+		public void enter() {
+			System.out.println("Entering inspect object state");
+			InputManager im = this.ps.se.getInputManager();
+			im.mapToMouse(this.drag, InputManager.MOUSE_BUTTON_1);
+		}
+		
+		public void exit() {
+			System.out.println("Exiting inspect object state");
+			InputManager im = this.ps.se.getInputManager();
+			im.mapToMouse(null, InputManager.MOUSE_BUTTON_1);
+		}
 	}
 }
 

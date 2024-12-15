@@ -14,8 +14,8 @@ public class GraphicsUtils {
 	// the width of a spring is inversely proportional to its spring
 	// constant. These constants are the constants by which we control
 	// these proportions.
-	private static double SPRING_CONSTANT = 4500;
-	private static double MASS_CONSTANT = 1;
+	public static double SPRING_CONSTANT = 4500;
+	public static double MASS_CONSTANT = 1;
 	
 	public static void setMassConstant(double d) {
 		MASS_CONSTANT = d;
@@ -96,16 +96,70 @@ public class GraphicsUtils {
     }
     
     /**
-     * Check if a point is over a spring.
+     * Gets a list of 4 points that define a rectangle around a spring anchored
+     * at points p1 and p2 with a spring constant k
      * 
-     * @param s the spring to check
-     * @param p the point to check
-     * @return true if the point is over the spring, false otherwise
+     * @param p1 one of the anchors of the spring
+     * @param p2 the other anchor of the spring
+     * @param k the spring constant of the spring
+     * @param r1 the radius of p1
+     * @param r2 the radius of p2
+     * @return a list of 4 points that define a rectangle around the spring
      */
-    public static boolean pointOverSpring(Spring s, Vec2 p) {
-    	double w = SPRING_CONSTANT / s.getSpringConstant();
-    	
-    	return false;
+    public static Vec2[] getPointsAroundSpring(Vec2 p1, Vec2 p2, double k, double r1, double r2) {
+    	double w = GraphicsUtils.SPRING_CONSTANT / k;
+		Vec2 r = Vec2.sub(p2, p1);
+		Vec2 rhat = r.unit();
+		
+		Vec2 startPoint = Vec2.add(p1, Vec2.mult(rhat, r1));
+		Vec2 endPoint = Vec2.sub(p2, Vec2.mult(rhat, r2));
+		
+		Vec2 a = Vec2.add(startPoint, Vec2.mult(rhat, 0.5 * w).rotate(Math.PI / 2));
+		Vec2 b = Vec2.add(endPoint, Vec2.mult(rhat, 0.5 * w).rotate(Math.PI / 2));
+		Vec2 c = Vec2.add(endPoint, Vec2.mult(rhat, 0.5 * w).rotate(-Math.PI / 2));
+		Vec2 d = Vec2.add(startPoint, Vec2.mult(rhat, 0.5 * w).rotate(-Math.PI / 2));
+		
+		Vec2[] points = new Vec2[4];
+		points[0] = a;
+		points[1] = b;
+		points[2] = c;
+		points[3] = d;
+		
+		return points;
+    }
+    
+    /**
+     * Check if a point is inside a rectangle.
+     * 
+     * @param p the point to check
+     * @param a a corner of the rectangle
+     * @param b the corner of the rectangle that is clockwise from a
+     * @param c the corner of the rectangle that is clockwise from b
+     * @param d the corner of the rectangle that is clockwise from c
+     * @return true if the point is inside the rectangle, false otherwise
+     */
+    public static boolean pointOverRectangle(Vec2 p, Vec2 a, Vec2 b, Vec2 c, Vec2 d) {
+    	return !(signedDistanceToLine(p, a, b) > 0.0 ||
+    			signedDistanceToLine(p, b, c) > 0.0 ||
+    			signedDistanceToLine(p, c, d) > 0.0 ||
+    			signedDistanceToLine(p, d, a) > 0.0);
+    }
+    
+    /**
+     * Calculates the signed distance point x is from the line defined
+     * by points a and b.
+     * 
+     * @param x the point we are calculating the distance from
+     * @param a a point on the line we are calculating the distance from
+     * @param b another point on the line we are calculating the distance from
+     * @return the distance between point x and the line defined by points a and b
+     */
+    private static double signedDistanceToLine(Vec2 x, Vec2 a, Vec2 b) {
+    	Vec2 v = Vec2.sub(b, a);
+    	if (v.mag() == 0.0) return 0.0;
+    	Vec2 px = Vec2.sub(x, a);
+    	double vCrosspx = v.getX() * px.getY() - v.getY() * px.getX();
+    	return vCrosspx / v.mag();
     }
     
     /**

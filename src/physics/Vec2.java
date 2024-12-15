@@ -71,12 +71,14 @@ public class Vec2 {
      * in radians.
      * 
      * @param angle the angle to rotate this vector by in radians
+     * @return this vector
      */
-    public void rotate(double angle) {
+    public Vec2 rotate(double angle) {
     	double r = this.mag();
     	double theta = this.dir();
     	this.x = r * (Math.cos(theta) * Math.cos(angle) - Math.sin(theta) * Math.sin(angle));
     	this.y = r * (Math.sin(theta) * Math.cos(angle) + Math.cos(theta) * Math.sin(angle));
+    	return this;
     }
 
     /**
