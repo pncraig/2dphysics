@@ -10,30 +10,35 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Transparency;
 import java.awt.event.KeyEvent;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JPanel;
+
+import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JComponent; 
+import javax.swing.JInternalFrame;
+import javax.swing.JPanel;
+import javax.swing.JRootPane;
+import javax.swing.KeyStroke;
+
+import java.awt.event.MouseEvent;
+import java.awt.Color;
+import java.awt.Component;
 
 import graphics.GameCore;
-import graphics.InputManager;
 import graphics.NullRepaintManager;
 import graphics.GameAction;
+import graphics.InputManager;
 
 import physics.ParticleSystem;
 import physics.NumericalSolver;
-import physics.RK4Solver;
-import physics.EulerSolver;
 import physics.Particle;
-import physics.Force;
+import physics.RK4Solver;
 import physics.Vec2;
-import physics.Spring;
+import physics.AABB;
 import physics.Gravity;
-import physics.PivotedSpring;
 
 /**
  * I've come to the realization that it might be better
@@ -49,24 +54,34 @@ public class SimulationEditor extends GameCore {
 		se.run();
 	}
 	
-	public PausedState PAUSED_STATE;
-	public UnpausedState UNPAUSED_STATE;
-	private EditorState state;
+	private EditorFrame ef;
 	
 	private InputManager im;
-	private GameAction exit;
-	private GameAction pause;
+	private GameAction leftMouse;
+	private boolean leftMouseClicked;
+	
+	private GameAction spacebar;
+	private boolean spacebarTapped;
 	
 	private boolean paused;
 	
 	private ParticleSystem ps;
 	private NumericalSolver ns;
-	private List<GUIPivot> pivots;
+	
+	// mouseOverObject is the object the mouse
+	// is currently hovering over. selectedObject
+	// is the object the mouse was hovering over when
+	// the mouse was last clicked.
+	private List<SimObject> objects;
+	private SimObject mouseOverObject;
+	private SimObject selectedObject;
+	
+	private List<JInternalFrame> objectEditors;
 	
 	private Gravity g;
 	
 	private Vec2 mousePosition;
-	
+
 	@Override
 	public void init() {
 		super.init();
@@ -74,30 +89,47 @@ public class SimulationEditor extends GameCore {
 		NullRepaintManager.install();
 		
 		this.im = new InputManager(this.screen.getFullScreenWindow());
-		this.exit = new GameAction("exit", GameAction.DETECT_INITIAL_PRESS_ONLY);
-		this.pause = new GameAction("pause", GameAction.DETECT_INITIAL_PRESS_ONLY);
 		
-		this.im.mapToKey(this.exit, KeyEvent.VK_ESCAPE);
-		this.im.mapToKey(this.pause, KeyEvent.VK_SPACE);
+		this.leftMouse = new GameAction("left mouse", GameAction.NORMAL);
+		this.leftMouseClicked = false;
+		this.im.mapToMouse(this.leftMouse, InputManager.MOUSE_BUTTON_1);
+		
+		this.spacebar = new GameAction("spacebar", GameAction.NORMAL);
+		this.spacebarTapped = false;
+		this.im.mapToKey(this.spacebar, KeyEvent.VK_SPACE);
+		
+		this.mousePosition = new Vec2(this.im.getMouseX(), this.im.getMouseY());
 		
 		this.paused = true;
 		
 		this.ps = new ParticleSystem();
 		this.ns = new RK4Solver();
 		
-		this.pivots = new ArrayList<>();
+		this.objects = new ArrayList<>();
 		
-		this.mousePosition = new Vec2(this.im.getMouseX(), this.im.getMouseY());
+		this.objectEditors = new ArrayList<>();
 		
-		this.g = new Gravity(this.ps, 98.1);
+		this.g = new Gravity(this.ps, 981);
 		
 		this.ps.addForce(this.g);
 		
-		this.PAUSED_STATE = new PausedState(this);
-		this.UNPAUSED_STATE = new UnpausedState(this);
-		this.state = this.PAUSED_STATE;
-		this.state.enter();
+		this.ef = new EditorFrame(this);
+		((JFrame)this.screen.getFullScreenWindow()).getLayeredPane().add(this.ef);
+		this.screen.getFullScreenWindow().setFocusable(true);
 		
+		/*
+		((JFrame)this.screen.getFullScreenWindow()).setFocusable(true);
+		((JFrame)this.screen.getFullScreenWindow()).getLayeredPane().setFocusable(true);
+		((JFrame)this.screen.getFullScreenWindow()).getLayeredPane().setFocusCycleRoot(true);
+		
+		
+		((JFrame)this.screen.getFullScreenWindow()).getLayeredPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "pause");
+		((JFrame)this.screen.getFullScreenWindow()).getLayeredPane().getActionMap().put("pause", new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				ef.pause();
+			}
+		});
+		*/
 	}
 	
 	/**
@@ -105,25 +137,50 @@ public class SimulationEditor extends GameCore {
 	 * input that has happened.
 	 */
 	public void processInput() {
-		if (this.exit.isPressed()) {
-			this.stop();
-		}
+		EditorMode mode = this.ef.getEditorMode();
 		
-		EditorState state = this.state.handleInput(this.pause);
-		if (state != null) {
-			this.paused = !this.paused;
-			this.state.exit();
+		int amt = this.leftMouse.getAmount();
+		
+		if (amt >= 1) {
+			if (!this.leftMouseClicked) {
+				this.leftMouseClicked = true;
+				this.selectedObject = this.mouseOverObject;
+				mode.mouseClicked(InputManager.MOUSE_BUTTON_1);
+				
+				if (amt >= 2) {
+					mode.mouseDoubleClicked(InputManager.MOUSE_BUTTON_1);
+				}
+			}
 			
-			this.state = state;
-			this.state.enter();
+			mode.mousePressed(InputManager.MOUSE_BUTTON_1);
+		} else {
+			if (this.leftMouseClicked) {
+				mode.mouseReleased(InputManager.MOUSE_BUTTON_1);
+			}
+			
+			this.leftMouseClicked = false;
 		}
 	}
 	
 	@Override
 	public void update(long elapsedTime) {
+		boolean objectFound = false;
+		for (int i = 0; i < this.objects.size(); i++) {
+			SimObject o = this.objects.get(i);
+			if (o.mouseOver(this.mousePosition)) {
+				this.mouseOverObject = o;
+				objectFound = true;
+				break;
+			}
+		}
+		
+		if (!objectFound) {
+			this.mouseOverObject = null;
+		}
+		
 		this.processInput();
 		
-		if (!this.paused) {
+		if (!this.isPaused()) {
 			double dt = elapsedTime / 1000.0;
 			this.ns.step(this.ps, dt);
 		} else {
@@ -132,27 +189,70 @@ public class SimulationEditor extends GameCore {
 		
 		this.mousePosition.setX(this.im.getMouseX());
 		this.mousePosition.setY(this.im.getMouseY());
+		
+		for (int i = 0; i < this.objects.size(); i++) {
+			this.objects.get(i).updateFields();
+		}
 	}
 	
 	@Override
-	public void draw(Graphics2D g) {
-		List<Particle> particles = this.ps.getParticles();
-		for (Particle p : particles) {
-			((GUIParticle)p).draw(g);
+	public void draw(Graphics2D g) {		
+		for (SimObject o : this.objects) {
+			o.draw(g);
 		}
 		
-		for (GUIPivot p : pivots) {
-			p.draw(g);
-		}
-		
-		List<Force> forces = this.ps.getForces();
-		for (Force f : forces ) {
-			if (f instanceof GUISpring || f instanceof GUIPivotedSpring) {
-				((Drawable)f).draw(g);
+		this.ef.getEditorMode().draw(g);
+	}
+	
+	/**
+	 * Set whether the simulation is paused or not.
+	 * 
+	 * @param paused if true, pause the simulation. If false, unpause
+	 * the simulation
+	 */
+	public void setPaused(boolean paused) {
+		this.paused = paused;
+	}
+	
+	/**
+	 * Check whether the simulation is paused or not.
+	 * 
+	 * @return if true, the simulation is paused. If false, the
+	 * simulation is not paused
+	 */
+	public boolean isPaused() {
+		return this.paused;
+	}
+	
+	/**
+	 * Add a SimObject to the SimulationEditor
+	 * 
+	 * @param o the SimObject to add
+	 */
+	public void addSimObject(SimObject o) {
+		o.addToSystem(this.ps);
+		this.objects.add(o);
+	}
+	
+	/**
+	 * Remove a SimObject from the SimulationEditor.
+	 * 
+	 * @param o the SimObject to remove
+	 */
+	public void removeSimObject(SimObject o) {
+		List<SimObject> objectsToRemove = o.removeFromSystem(this.ps);
+		for (int i = 0; i < this.objects.size(); i++) {
+			if (this.objects.get(i).equals(o)) {
+				this.objects.remove(i);
+				break;
 			}
 		}
 		
-		this.state.render(g);
+		if (objectsToRemove != null) {
+			for (int i = 0; i < objectsToRemove.size(); i++) {
+				this.removeSimObject(objectsToRemove.get(i));
+			}
+		}
 	}
 	
 	/**
@@ -198,23 +298,6 @@ public class SimulationEditor extends GameCore {
 	}
 	
 	/**
-	 * Returns the content pane of this window, but sets
-	 * the background of the content pane to be transparent first
-	 * 
-	 * @return the content pane for this window
-	 */
-	public Container getContentPane() {
-		JFrame frame = (JFrame)this.screen.getFullScreenWindow();
-		Container contentPane = frame.getContentPane();
-		
-		if (contentPane instanceof JComponent) {
-			((JComponent)contentPane).setOpaque(false);
-		}
-		
-		return contentPane;
-	}
-	
-	/**
 	 * Sets the cursor.
 	 * 
 	 * @param cursor the cursor to set the cursor to
@@ -222,64 +305,7 @@ public class SimulationEditor extends GameCore {
 	public void setCursor(Cursor cursor) {
 		this.screen.getFullScreenWindow().setCursor(cursor);
 	}
-	
-	/**
-	 * Get the list of the particles in the ParticleSystem.
-	 * 
-	 * @return a list of particles in the ParticleSystem
-	 */
-	public List<Particle> getParticles() {
-		return this.ps.getParticles();
-	}
-	
-	/**
-	 * Get the list of pivots.
-	 * 
-	 * @return list of pivots
-	 */
-	public List<GUIPivot> getPivots() {
-		return this.pivots;
-	}
-	
-	/**
-	 * Get the forces in the system.
-	 * 
-	 * @return list of forces
-	 */
-	public List<Force> getForces() {
-		return this.ps.getForces();
-	}
-	
-	/**
-	 * Add a new GUIParticle to the system.
-	 * 
-	 * @param x the position vector to add the new particle at
-	 * @param v the velocity vector to add the new particle with
-	 * @param m the mass of the new particle
-	 */
-	public void addParticle(Vec2 x, Vec2 v, double m) {
-		this.ps.addParticle(new GUIParticle(new Particle(x, v, m)));
-	}
-	
-	/**
-	 * Add a new Pivot to the system (a pivot is basically just a 
-	 * Vec2).
-	 * 
-	 * @param p the position of the pivot
-	 */
-	public void addPivot(Vec2 p) {
-		this.pivots.add(new GUIPivot(p));
-	}
-	
-	/**
-	 * Add a new Force to the particle system.
-	 * 
-	 * @param f the force to add
-	 */
-	public void addForce(Force f) {
-		this.ps.addForce(f);
-	}
-	
+
 	/**
 	 * Gets the position of the mouse as a vector.
 	 * 
@@ -290,14 +316,70 @@ public class SimulationEditor extends GameCore {
 	}
 	
 	/**
-	 * Gets the InputManager that handles input for the 
-	 * simulation editor.
+	 * Get the object the mouse is hovering over.
 	 * 
-	 * @return the InputManager
+	 * @return the object the mouse is hovering over
 	 */
-	public InputManager getInputManager() {
-		return this.im;
+	public SimObject getMouseOverObject() {
+		return this.mouseOverObject;
 	}
+	
+	/**
+	 * Get the object that is currently selected.
+	 * 
+	 * @return the object that is currently selected
+	 */
+	public SimObject getSelectedObject() {
+		return this.selectedObject;
+	}
+	
+	/**
+	 * Add an object editor to this SimulationEditor.
+	 * 
+	 * @param c the editor to add
+	 */
+	public void addObjectEditor(JInternalFrame c) {
+		this.objectEditors.add(c);
+		((JFrame)this.screen.getFullScreenWindow()).getLayeredPane().add(c);
+	}
+	
+	/**
+	 * Clear the object editors that are displayed on the screen.
+	 */
+	public void clearObjectEditors() {
+		for (int i = this.objectEditors.size() - 1; i >= 0; i--) {
+			try {
+				this.objectEditors.get(i).setClosed(true);
+			} catch (java.beans.PropertyVetoException e) { }
+			
+			this.objectEditors.remove(i);
+		}		
+	}
+	
+	/**
+	 * Get the SimParticle that is closest to the mouse pointer.
+	 * 
+	 * @return the SimParticle that is closest to the mouse
+	 */
+	public SimParticle getClosestSimParticle() {
+		SimObject closestParticle = null;
+		double closestDistance = Double.MAX_VALUE;
+		for (int i = 0; i < this.objects.size(); i++) {
+			SimObject o = this.objects.get(i);
+			if (o.getType() == SimObject.Types.SIM_PARTICLE) {
+				Particle p = (Particle)o.getPhysicsObject();
+				double dist = Vec2.sub(p.getPosition(), this.getMousePosition()).mag();
+				
+				if (dist < closestDistance) {
+					closestParticle = o;
+					closestDistance = dist;
+				}
+			}
+		}
+		
+		return (SimParticle)closestParticle;
+	}
+	
 }
 
 

@@ -56,12 +56,30 @@ public class Spring extends Force {
     }
     
     /**
+     * Set the resting length of this spring.
+     * 
+     * @param l the new resting length of this spring
+     */
+    public void setLength(double l) {
+    	this.l = l;
+    }
+    
+    /**
      * Get the spring constant of this spring.
      * 
      * @return the spring constant of this spring
      */
     public double getSpringConstant() {
     	return this.k;
+    }
+    
+    /**
+     * Set the spring constant of this spring.
+     * 
+     * @param k the new spring constant
+     */
+    public void setSpringConstant(double k) {
+    	this.k = k;
     }
 
     @Override

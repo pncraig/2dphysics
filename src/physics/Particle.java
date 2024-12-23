@@ -98,6 +98,15 @@ public class Particle extends Registerable {
     public double getMass() {
         return this.m;
     }
+    
+    /**
+     * Set the particle's mass.
+     * 
+     * @param m the new mass of the particle
+     */
+    public void setMass(double m) {
+    	this.m = m;
+    }
 
     /**
      * Calculate the kinetic energy of this particle

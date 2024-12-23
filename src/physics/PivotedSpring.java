@@ -12,8 +12,8 @@ public class PivotedSpring extends Force {
 	private double k;
 	private double l;
 	
-	public PivotedSpring(Particle p, Vec2 pivot, double k, double l) {
-		this.p = p;
+	public PivotedSpring(Particle particle, Vec2 pivot, double k, double l) {
+		this.p = particle;
 		this.pivot = pivot;
 		this.k = k;
 		this.l = l;
@@ -32,7 +32,7 @@ public class PivotedSpring extends Force {
 	 * @return the pivot point of the spring
 	 */
 	public Vec2 getPivot() {
-		return new Vec2(this.pivot);
+		return this.pivot;
 	}
 	
 	/**
@@ -53,6 +53,15 @@ public class PivotedSpring extends Force {
 		return this.k;
 	}
 	
+    /**
+     * Set the spring constant of this spring.
+     * 
+     * @param k the new spring constant
+     */
+    public void setSpringConstant(double k) {
+    	this.k = k;
+    }
+	
 	/**
 	 * Get the resting length of this spring.
 	 * 
@@ -61,6 +70,15 @@ public class PivotedSpring extends Force {
 	public double getLength() {
 		return this.l;
 	}
+	
+    /**
+     * Set the resting length of this spring.
+     * 
+     * @param l the new resting length of this spring
+     */
+    public void setLength(double l) {
+    	this.l = l;
+    }
 	
 	@Override
 	public void applyForce() {

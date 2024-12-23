@@ -43,6 +43,20 @@ public class ParticleSystem {
     }
     
     /**
+     * Remove a particle from the system.
+     * 
+     * @param p the particle to remove
+     */
+    public void removeParticle(Particle p) {
+    	for (int i = 0; i < this.particles.size(); i++) {
+    		if (this.particles.get(i).equals(p)) {
+    			this.particles.remove(i);
+    			return;
+    		}
+    	}
+    }
+    
+    /**
      * Access the particles in the system. I might have to
      * change this function because it allows the particles
      * within the system to be changed. I'll just have to be
@@ -73,6 +87,20 @@ public class ParticleSystem {
     public void addForces(List<Force> forces) {
     	for (int i = 0; i < forces.size(); i++) {
     		this.forces.add(forces.get(i));
+    	}
+    }
+    
+    /**
+     * Remove a force from the system.
+     * 
+     * @param f the force to remove
+     */
+    public void removeForce(Force f) {
+    	for (int i = 0; i < this.forces.size(); i++) {
+    		if (this.forces.get(i).equals(f)) {
+    			this.forces.remove(i);
+    			return;
+    		}
     	}
     }
     

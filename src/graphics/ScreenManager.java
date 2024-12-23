@@ -1,5 +1,6 @@
 package graphics;
 
+import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -80,6 +81,14 @@ public class ScreenManager {
         frame.setUndecorated(true);
         frame.setIgnoreRepaint(true);
         frame.setResizable(false);
+        
+        /*
+        JDesktopPane desktopPane = new JDesktopPane();
+        desktopPane.setDragMode(JDesktopPane.OUTLINE_DRAG_MODE);
+        desktopPane.setIgnoreRepaint(true);
+        frame.setContentPane(desktopPane);
+        frame.setLayeredPane(desktopPane);
+        */
 
         this.graphicsDevice.setFullScreenWindow(frame);
         if (displayMode != null && this.graphicsDevice.isDisplayChangeSupported()) {

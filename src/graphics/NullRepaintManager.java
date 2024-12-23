@@ -15,7 +15,7 @@ public class NullRepaintManager extends RepaintManager {
 	public static void install() {
 		RepaintManager repaintManager = new NullRepaintManager();
 		repaintManager.setDoubleBufferingEnabled(false);
-		repaintManager.setCurrentManager(repaintManager);
+		RepaintManager.setCurrentManager(repaintManager);
 	}
 	
 	@Override

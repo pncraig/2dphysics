@@ -81,13 +81,13 @@ public class InputManager implements
 
         // allow input of the TAB key and other keys normally
         // used for focus traversal
-        this.comp.setFocusTraversalKeysEnabled(false);
+        //this.comp.setFocusTraversalKeysEnabled(false);
     }
 
     /**
      * Sets the cursor on this InputManager's input component
      *
-     * @param curser the new cursor
+     * @param cursor the new cursor
      */
     public void setCursor(Cursor cursor) {
         this.comp.setCursor(cursor);
@@ -186,13 +186,13 @@ public class InputManager implements
 
         for (int i = 0; i < this.keyActions.length; i++) {
             if (this.keyActions[i] == gameAction) {
-                list.add(this.getKeyName(i));
+                list.add(getKeyName(i));
             }
         }
 
         for (int i = 0; i < this.mouseActions.length; i++) {
             if (this.mouseActions[i] == gameAction) {
-                list.add(this.getMouseName(i));
+                list.add(getMouseName(i));
             }
         }
 
@@ -324,7 +324,7 @@ public class InputManager implements
      * @return the GameAction that should happen
      */
     private GameAction getMouseButtonAction (MouseEvent e) {
-        int mouseCode = this.getMouseButtonCode(e);
+        int mouseCode = getMouseButtonCode(e);
 
         if (mouseCode != -1) {
             return this.mouseActions[mouseCode];
@@ -362,9 +362,8 @@ public class InputManager implements
     // from the MouseListener interface
     public void mousePressed(MouseEvent e) {
         GameAction gameAction = this.getMouseButtonAction(e);
-        System.out.println(e.getClickCount());
         if (gameAction != null) {
-            gameAction.press();
+            gameAction.press(e.getClickCount());
         }
     }
 

@@ -5,6 +5,7 @@ import java.util.List;
 /**
  * This class represents gravity as it is felt here on
  * the Earth, causing things to fall.
+ * 
  * @author pncra
  */
 public class Gravity extends Force {
@@ -24,6 +25,16 @@ public class Gravity extends Force {
      */
     public double getConstant() {
     	return this.g;
+    }
+    
+    /**
+     * Set the gravitational acceleration caused by this
+     * gravity.
+     * 
+     * @param g the new gravitational acceleration caused by this gravity
+     */
+    public void setConstant(double g) {
+    	this.g = g;
     }
 
     @Override

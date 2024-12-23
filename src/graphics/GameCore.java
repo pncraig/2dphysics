@@ -1,11 +1,15 @@
 package graphics;
 
 import java.awt.Window;
+
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.Graphics2D;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import java.awt.Container;
+import javax.swing.JComponent;
 
 import java.awt.Color;
 
@@ -45,10 +49,18 @@ public abstract class GameCore {
         this.screen = new ScreenManager();
         this.screen.setFullScreen(null); // Remember, null uses the default display mode
 
-        Window w = this.screen.getFullScreenWindow();
+        JFrame w = (JFrame)this.screen.getFullScreenWindow();
         w.setFont(new Font("Dialog", Font.PLAIN, FONT_SIZE));
         w.setBackground(Color.BLUE);
         w.setForeground(Color.WHITE);
+        
+        // We need to make sure the contentPane doesn't draw its background
+        Container contentPane = w.getContentPane();
+        
+        if (contentPane instanceof JComponent) {
+        	((JComponent)contentPane).setOpaque(false);
+        }
+        
         this.isRunning = true;
     }
 
@@ -70,27 +82,32 @@ public abstract class GameCore {
         long startTime = System.currentTimeMillis();
         long currTime = startTime;
 
+        SynchronizedEventQueue.use();
+        
         while (isRunning) {
-            long elapsedTime = System.currentTimeMillis() - currTime;
-            currTime += elapsedTime;
+	        long elapsedTime = System.currentTimeMillis() - currTime;
+	        currTime += elapsedTime;
+	
+	        this.update(elapsedTime);
 
-            this.update(elapsedTime);
-
-            // Draw to the screen
-            Graphics2D g = this.screen.getGraphics();
-            g.clearRect(0, 0, this.screen.getWidth(), this.screen.getHeight());
-            // Print the FPS in the top left of the screen
-            double fps = 1000.0 / elapsedTime;
-            g.drawString(String.format("FPS: %.2f", fps), 0, 20);
-            
-            this.draw(g);
-            
-            // draw Swing components
-            JFrame frame = (JFrame)this.screen.getFullScreenWindow();
-            frame.getLayeredPane().paintComponents(g);
-            
-            g.dispose();
-            this.screen.update();
+	        synchronized (SynchronizedEventQueue.MUTEX) {
+	            // Draw to the screen
+	            Graphics2D g = this.screen.getGraphics();
+	            g.clearRect(0, 0, this.screen.getWidth(), this.screen.getHeight());
+	            
+	            // Print the FPS in the top left of the screen
+	            double fps = 1000.0 / elapsedTime;
+	            g.drawString(String.format("FPS: %.2f", fps), 0, 20);
+	            
+	            this.draw(g);
+	            
+	            // draw Swing components
+	            JFrame frame = (JFrame)this.screen.getFullScreenWindow();
+	            frame.getLayeredPane().paintComponents(g);
+	            
+	            g.dispose();
+	            this.screen.update();
+        	}
         }
     }
 

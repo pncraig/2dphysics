@@ -1,6 +1,7 @@
 package tests;
 
 import java.awt.Graphics2D;
+import java.awt.Color;
 
 import physics.*;
 
@@ -42,7 +43,7 @@ public class PivotSpringTest extends TestHarness {
 		
 		this.s1 = new PivotedSpring(this.a, new Vec2(this.screen.getWidth() / 2, 100), 50000, 150);
 		this.s2 = new Spring(this.a, this.b, 50000, 150);
-		this.mouseSpring = new PivotedSpring(this.b, this.mousePosition, 10, 150);
+		//this.mouseSpring = new PivotedSpring(this.b, this.mousePosition, 10, 150);
 		
 		this.g = new Gravity(this.ps, 981);
 		
@@ -54,8 +55,8 @@ public class PivotSpringTest extends TestHarness {
 		this.ps.addForce(
 				this.s1,
 				this.s2,
-				this.g,
-				this.mouseSpring
+				this.g
+				//this.mouseSpring
 		);
 		
 	}
@@ -77,6 +78,6 @@ public class PivotSpringTest extends TestHarness {
 		GraphicsUtils.drawParticle(g, this.b);
 		GraphicsUtils.drawPivotedSpring(g, this.s1);
 		GraphicsUtils.drawSpring(g, this.s2);
-		GraphicsUtils.drawPivotedSpring(g, this.mouseSpring);
+		//GraphicsUtils.drawPivotedSpring(g, this.mouseSpring);
 	}
 }
